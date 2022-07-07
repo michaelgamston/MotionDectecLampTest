@@ -1,0 +1,8 @@
+malloc error when running code on the esp32, code compiles and flashes onto esp fine, but crashes when camera setup is called. 
+- tried to decrease the resolution size as I though it could be a problem with psram but didn't work. 
+- tried adding below code to fix problem as sujested on forum,failed
+
+config.fb_location    = CAMERA_FB_IN_PSRAM, /*!< The location where the frame buffer will be allocated */
+config.grab_mode      = CAMERA_GRAB_LATEST  /*!< When buffers should be filled */
+
+-changed config.fb_location = CAMERA_FB_IN_PSRAM to CAMERA_FB_IN_DRAM. Wrong memory location for camera frame buffer 
