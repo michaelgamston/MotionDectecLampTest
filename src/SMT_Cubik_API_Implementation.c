@@ -2043,6 +2043,9 @@ bool setup_camera() {
     config.frame_size = FRAMESIZE_QQVGA;
     config.jpeg_quality = 12;
     config.fb_count = 1;
+    // added below as possible fix for frame buffer malloc failed 
+    config.fb_location = CAMERA_FB_IN_DRAM; /*!< The location where the frame buffer will be allocated */
+    config.grab_mode = CAMERA_GRAB_LATEST; /*!< When buffers should be filled */
 
     bool ok = esp_camera_init(&config) == ESP_OK;
 
