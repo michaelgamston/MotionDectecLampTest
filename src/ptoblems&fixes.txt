@@ -1,0 +1,2 @@
+malloc error when running code on the esp32, code compiles and flashes onto esp fine, but crashes when camera setup is called. 
+- tried to decrease the resolution size as I though it could be a problem with psram but didn't work. 
