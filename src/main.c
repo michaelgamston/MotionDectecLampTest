@@ -547,14 +547,14 @@ void app_main(void)
   u8CubikControl_LibInit();
   u8CubikControl_DaliLight_Init(CA_REQUEST_IFACE_ENABLE, 0U, 0U);
   u8CubikControl_DaliLight_SetLevel(0);
-  printf("COMPLETE STAGE ONE\n");
+  printf("COMPLETE DALI SETUP\n");
 
 #ifdef MASTER_WITH_POT
   u8CubikControl_GPIO_Pin_Config(sensePin1, CA_PIN_CONFIG_INPUT);
 #endif
   
   u8CubikControl_GPIO_Pin_Config(OnboardLedPin, CA_PIN_CONFIG_OUTPUT);
-  u8CubikControl_GPIO_Pin_ValueSet(OnboardLedPin, CA_PIN_SET_ON);
+  u8CubikControl_GPIO_Pin_ValueSet(OnboardLedPin, CA_PIN_SET_OFF);
   u8CubikControl_GPIO_Pin_Config(buttonPin, CA_PIN_CONFIG_INPUT);
 //  u8CubikControl_GPIO_Pin_Config(potPin, CA_PIN_CONFIG_ANALOG_INPUT);
 //   u8CubikControl_BT_SetDeviceEnable(CA_STATUS_ENABLE);
@@ -562,57 +562,78 @@ void app_main(void)
 //   u8CubikControl_BT_SetBroadcastEnable(CA_STATUS_ENABLE);
     
 	// Sleep for 2 seconds - so the BT stack can sort itself out
-	printf("COMPLETE STAGE TWO\n");
-	SMT_Cubik_delay_function(2000);
-	printf("CAMERA SET UP\n");
+	printf("COMPLETE PIN CONFIG\n");
+	SMT_Cubik_delay_function(1000);
 	if (setup_camera())
 	{
-		u8CubikControl_GPIO_Pin_ValueSet(OnboardLedPin, CA_PIN_SET_OFF);
+		u8CubikControl_GPIO_Pin_ValueSet(OnboardLedPin, CA_PIN_SET_ON);
 	}
-	SMT_Cubik_delay_function(2000);
-	u8CubikControl_GPIO_Pin_ValueSet(OnboardLedPin, CA_PIN_SET_ON);
+	SMT_Cubik_delay_function(500);
+	u8CubikControl_GPIO_Pin_ValueSet(OnboardLedPin, CA_PIN_SET_OFF);
 	printf("COMPLETE STAGE CAMERA SET UP\n");
 
   // Main loop - simply loop round operations, calling as needed
-// 	bool clause = false;
-// 	while(1)
-// 	{	
-// 		clause = false;
-// 		if (!capture_still()) {
-//         printf("capture_still failed");
-// 		u8CubikControl_GPIO_Pin_ValueSet(OnboardLedPin, CA_PIN_SET_OFF);
-//         SMT_Cubik_delay_function(5000);
-// 		u8CubikControl_GPIO_Pin_ValueSet(OnboardLedPin, CA_PIN_SET_ON);
-//     	}
+    printf("ENTERING WHILE LOOP\n");
+	bool motion = false;
+	bool blocker = false;
+	int counter = 0;
+	while(1)
+	{	
+		// capture a new image through esp32-cam
+		motion = false;
+		if (!capture_still()) 
+		{
+			printf("capture_still failed\n");
+			u8CubikControl_GPIO_Pin_ValueSet(OnboardLedPin, CA_PIN_SET_ON);
+			SMT_Cubik_delay_function(500);
+			u8CubikControl_GPIO_Pin_ValueSet(OnboardLedPin, CA_PIN_SET_OFF);
+    	}
 
-// 		if (motion_detect()) {
-// 			printf("motion detected");
-// 			clause = true;
-// 		}
+		// compare with old image to detect motion 
+		if (motion_detect()) 
+		{
+			printf("motion detected\n");
+			motion = true;
+		}
 		
-// 		update_frame();
+		//update the frame for next comparison 
+		update_frame();
 
-// 		if (clause)
-// 		{
-// 			u8CubikControl_DaliLight_SetLevel(80);
-// 			SMT_Cubik_delay_function(5000);
-// 			u8CubikControl_DaliLight_SetLevel(0);
-// 		}
+		// if blocker has been activated deactivate after 50 loop iterations (5 seconds)
+		if (counter == 50) 
+		{
+			blocker = false;
+		}
 
-// 	  // Call the test app 'thread'
-// 	  //vMainTestAppThread();
+		// if motion activated and blocker deactivate then light up lamp 
+		if(motion && !blocker)
+		{
+			u8CubikControl_DaliLight_SetLevel(100);
+			blocker = true;
+			counter = 0;
+		}
+		else if(!motion && !blocker) // else if blocker deactivated and motion deactivated then turn light off
+		{
+			u8CubikControl_DaliLight_SetLevel(0);
+			counter = 0;
+		}
 
-// 	  // Call the cubik api 'thread'
-// 	  //vCubikControl_Priv_Main();
+	  // Call the test app 'thread'
+	  //vMainTestAppThread();
 
-// #if 0
-//     /* Delay for 1 second, avoid watchdog barrf */
-//     SMT_Cubik_delay_function(1000);
-// #else
-//     /* Delay for 100 ms, avoid watchdog barrf - 1 second is too long, slow response */
-//     SMT_Cubik_delay_function(MAIN_LOOP_PAUSE_TIME);
-// #endif
-// 	}
+	  // Call the cubik api 'thread'
+	  //vCubikControl_Priv_Main();
+
+#if 0
+    /* Delay for 1 second, avoid watchdog barrf */
+    SMT_Cubik_delay_function(1000);
+#else
+    /* Delay for 100 ms, avoid watchdog barrf - 1 second is too long, slow response */
+    SMT_Cubik_delay_function(MAIN_LOOP_PAUSE_TIME);
+	// increment counter once every iteration (millisecond)
+	counter++;
+#endif
+	}
 }
 #endif
 
